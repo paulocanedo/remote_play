@@ -1,9 +1,7 @@
 import SocketServer
 import pygame
 
-from http import RemotePlayHttpHandler
-
-__author__ = 'paulocanedo'
+from src.http import RemotePlayHttpHandler
 
 PORT = 8000
 

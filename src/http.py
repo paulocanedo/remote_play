@@ -2,7 +2,7 @@ from BaseHTTPServer import BaseHTTPRequestHandler
 import cStringIO
 import pygame
 
-from music import MusicFinder
+from src.music import MusicFinder
 
 TEXT_HTML = 'text/html'
 APPLICATION_JSON = 'application_json'
@@ -52,7 +52,7 @@ class RemotePlayHttpHandler(BaseHTTPRequestHandler):
         if self.path == '/resume':
             pygame.mixer.music.unpause()
 
-        if self.path == '/info':
+        if self.path == '/current':
             output.write(', %s' % pygame.mixer.music.get_pos())
 
         if self.path == '/list':
