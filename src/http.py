@@ -58,15 +58,10 @@ class RemotePlayHttpHandler(BaseHTTPRequestHandler):
         if self.path == '/list':
             response_type = APPLICATION_JSON
             output.write('["')
-            output.write('","'.join(self.finder.list_files()))
 
-            # for file in self.finder.list_files():
-            #     if file.endswith(".m4a"):
-            #         continue
-            #
-            #     f = tagpy.FileRef(file)
-            #     output.write(f.tag().artist)
-            #     output.write(',')
+            for music in self.finder.list_files():
+                output.write(music)
+                output.write(",")
 
             output.write('"]')
 
