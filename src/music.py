@@ -1,52 +1,49 @@
-import os, sqlite3, kaa
+import os
+import kaa.metadata
+from database import Database
+
 
 class MusicFinder:
-    def __init__(self):
-        self.music = "/home/paulocanedo/Music"
-        self.database_path = 'database.db'
-        self.connection = sqlite3.connect(self.database_path)
+    def __init__(self, base_dir):
+        self.base_dir = base_dir
+        self.database = Database()
+        self.rebuild = True
 
-    def create_database(self):
-        files = self.list_files()
+    def list_musics(self):
+        if self.rebuild:
+            base_dir = self.base_dir
+            values = MusicFinder.list_musics_from_filesystem(base_dir)
+            self.database.truncate_db()
+            self.database.insert(values)
+            self.rebuild = False
+        return self.list_musics_from_database()
 
-        cursor = self.connenction.cursor()
+    def list_musics_from_database(self):
+        return self.database.list()
 
-        cursor.execute("""
-                        CREATE TABLE IF NOT EXISTS track
-                            (id INTEGER PRIMARY KEY AUTOINCREMENT, filepath TEXT, number INTEGER, title TEXT, album_title TEXT, album_artist TEXT)
-        """)
-        self.connection.commit()
+    def get_file_path(self, music_id):
+        return self.database.get_file_path(music_id)
 
-        finder = MusicFinder()
-        musics = finder.list_files()
+    @staticmethod
+    def list_musics_from_filesystem(base_dir):
+        files = MusicFinder.list_files_from_filesystem(base_dir)
         musics_mdata = []
-
-        for music in musics:
-            mdata = kaa.metadata.parse(music)
+        for f in files:
+            mdata = kaa.metadata.parse(f)
             if mdata:
-                values = (repr(music), mdata.get('trackno'), mdata.get('title'), mdata.get('album'), mdata.get('artist'))
+                values = (str(f), mdata.get('trackno'), mdata.get('title'), mdata.get('album'), mdata.get('artist'))
                 musics_mdata.append(values)
 
-        cursor.executemany("INSERT INTO track (filepath, number, title, album_title, album_artist) VALUES (?, ?, ?, ?, ?)", musics_mdata)
-        self.connection.commit()
-        print "database created"
+        return musics_mdata
 
-    def list_files(self):
-        self.connection.row_factory = sqlite3.Row
-        cursor = self.connection.cursor()
-        cursor.execute("SELECT * FROM track")
-        rows = cursor.fetchall()
-
-        return rows
-
-    def list_file_from_filesystem(self):
+    @staticmethod
+    def list_files_from_filesystem(base_dir, extensions={".mp3", ".flac"}):
         file_list = []
 
-        extensions = {".mp3", ".m4a", ".flac"}
-
-        for root, subFolders, files in os.walk(self.music):
+        for root, subFolders, files in os.walk(base_dir):
             for f in files:
                 for extension in extensions:
                     if f.endswith(extension):
-                        file_list.append(os.path.join(root, f))
+                        path = os.path.join(root, f)
+                        file_list.append(path)
         return file_list

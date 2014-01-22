@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>title</title>
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+  </head>
+  <body>
+
+    <div id="wrap">
+
+      <div class="container">
+        <div class="page-header">
+          <h1>List of musics</h1>
+          <h2>
+
+<div class="btn-group">
+<button type="button" class="btn btn-lg"><span class="glyphicon glyphicon-backward"></span></button>
+<button type="button" class="btn btn-lg"><span class="glyphicon glyphicon-play"></span></button>
+<button type="button" class="btn btn-lg"><span class="glyphicon glyphicon-forward"></span></button>
+</div>
+
+          </h2>
+        </div>
+        <div id="list_music"></div>
+      </div>
+    </div>
+
+    <div id="footer">
+      <div class="container">
+        <p class="text-muted">Place sticky footer content here.</p>
+      </div>
+    </div>
+
+  </body>
+
+<script src="http://localhost/jquery-2.0.3.min.js"></script>
+<script>
+    $(document).ready(function() {
+        var api = "http://localhost:8000/list";
+        $.getJSON(api, function(data) {
+            var items = [];
+            $.each(data, function(key, val) {
+                var content_text;
+                if(val.title == null) {
+                    content_text = val.file_path;
+                } else {
+                    content_text = val.title + " - " + val.album_artist + " - " + val.album_title;
+                }
+                items.push("<a href=\"/play/" + val.id + "\"><li>" +
+                           content_text  + "</a></li>");
+            });
+
+             $("<ul/>", {
+                html: items.join("")
+             }).appendTo("#list_music");
+        })
+    });
+</script>
+</html>
