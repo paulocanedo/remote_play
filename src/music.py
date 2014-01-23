@@ -1,28 +1,29 @@
 import os
+import pygame
 import kaa.metadata
 from database import Database
 
 
 class MusicFinder:
     def __init__(self, base_dir):
-        self.base_dir = base_dir
-        self.database = Database()
-        self.rebuild = True
+        self._base_dir = base_dir
+        self._database = Database()
+        self._rebuild = True
 
     def list_musics(self):
-        if self.rebuild:
-            base_dir = self.base_dir
+        if self._rebuild:
+            base_dir = self._base_dir
             values = MusicFinder.list_musics_from_filesystem(base_dir)
-            self.database.truncate_db()
-            self.database.insert(values)
-            self.rebuild = False
+            self._database.truncate_db()
+            self._database.insert(values)
+            self._rebuild = False
         return self.list_musics_from_database()
 
     def list_musics_from_database(self):
-        return self.database.list()
+        return self._database.list()
 
-    def get_file_path(self, music_id):
-        return self.database.get_file_path(music_id)
+    def get_metadata(self, music_id):
+        return self._database.get_one(music_id)
 
     @staticmethod
     def list_musics_from_filesystem(base_dir):
@@ -47,3 +48,65 @@ class MusicFinder:
                         path = os.path.join(root, f)
                         file_list.append(path)
         return file_list
+
+
+class MusicPlayer:
+    _instance = None
+
+    def __init__(self, finder):
+        self._finder = finder
+        self._current_music = None
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(MusicPlayer, cls).__new__(cls, *args, **kwargs)
+        return cls._instance
+
+    def play_next(self):
+        return True
+
+    def play_prev(self):
+        return True
+
+    def current_title(self):
+        return 'not_playing' if not self._current_music else self._current_music[2]
+
+    def play(self, music_id):
+        self._current_music = self._finder.get_metadata(music_id)
+        file_path = self._current_music[0]
+
+        pygame.mixer.music.load(file_path)
+        pygame.mixer.music.play()
+
+    def pause(self):
+        pygame.mixer.music.pause()
+
+    def resume(self):
+        pygame.mixer.music.unpause()
+
+    def stop(self):
+        pygame.mixer.music.stop()
+
+    def get_volume(self):
+        return pygame.mixer.music.get_volume()
+
+    def set_volume(self, volume):
+        pygame.mixer.music.set_volume(volume)
+
+    def get_position(self):
+        return pygame.mixer.music.get_pos()
+
+    def set_position(self, position):
+        pygame.mixer.music.set_pos(position)
+
+pygame.init()
+pygame.mixer.init()
+finder = MusicFinder("/home/paulocanedo/Downloads/Music")
+finder.list_musics()
+player = MusicPlayer(finder)
+
+print player.current_title()
+player.play(5)
+print player.current_title()
+player = MusicPlayer(finder)
+print player.current_title()

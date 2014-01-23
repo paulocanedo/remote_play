@@ -37,12 +37,17 @@ class Database:
                            "VALUES (?, ?, ?, ?, ?)", values)
         connection.commit()
 
-    def get_file_path(self, music_id):
+    def get_one(self, music_id):
+        """
+        get music metadata
+        @param music_id:
+        @return: indexes: 0-> file_path, 1-> trackno, 2-> title, 3-> album_title, 4-> album_artist
+        """
         connection = self.get_connection()
         cursor = connection.cursor()
-        cursor.execute("SELECT file_path FROM tracks WHERE id = %s" % music_id)
+        cursor.execute("SELECT file_path, trackno, title, album_title, album_artist FROM tracks WHERE id = %s" % music_id)
 
-        return cursor.fetchone()[0]
+        return cursor.fetchone()
 
     def list(self):
         connection = self.get_connection()

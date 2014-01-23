@@ -12,13 +12,16 @@
       <div class="container">
         <div class="page-header">
           <h1>List of musics</h1>
+
           <h2>
 
 <div class="btn-group">
 <button type="button" class="btn btn-lg"><span class="glyphicon glyphicon-backward"></span></button>
-<button type="button" class="btn btn-lg"><span class="glyphicon glyphicon-play"></span></button>
+<button type="button" class="btn btn-lg" onclick="javascript:sendCommand('resume')"><span class="glyphicon glyphicon-play"></span></button>
+<button type="button" class="btn btn-lg" onclick="javascript:sendCommand('pause')"><span class="glyphicon glyphicon-pause"></span></button>
 <button type="button" class="btn btn-lg"><span class="glyphicon glyphicon-forward"></span></button>
 </div>
+<input type="range" id="control_volume" min="1" max="100" value="100">
 
           </h2>
         </div>
@@ -34,10 +37,13 @@
 
   </body>
 
-<script src="http://localhost/jquery-2.0.3.min.js"></script>
+<!--<script src="http://localhost/jquery-2.0.3.min.js"></script>-->
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
 <script>
+    var url_api = "http://192.168.0.11:8000/";
+
     $(document).ready(function() {
-        var api = "http://localhost:8000/list";
+        var api = url_api + "list";
         $.getJSON(api, function(data) {
             var items = [];
             $.each(data, function(key, val) {
@@ -54,7 +60,26 @@
              $("<ul/>", {
                 html: items.join("")
              }).appendTo("#list_music");
-        })
+        });
+
+        $("#control_volume").change(function(value) {
+            var volume = $(this).val();
+            sendCommand("set_volume/" + volume);
+        });
+        setMetadata();
     });
+
+
+    function sendCommand(command, id) {
+        var api = url_api + command;
+        $.getJSON(api, function(data) { });
+    }
+
+    function setMetadata() {
+        var api = url_api + "current";
+        $.getJSON(api, function(data) {
+            $("#control_volume").val(data.volume * 100.0);
+        });
+    }
 </script>
 </html>
