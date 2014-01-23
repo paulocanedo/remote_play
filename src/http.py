@@ -10,9 +10,14 @@ APPLICATION_JSON = 'application/json'
 
 
 class RemotePlayHttpHandler(BaseHTTPRequestHandler):
+    _finder = None
+    _music_player = None
+
     def __init__(self, request, client_address, server):
-        self._finder = MusicFinder("/home/paulocanedo/Downloads/Music")
-        self._music_player = MusicPlayer(self._finder)
+        if self.__class__._finder is None:
+            self.__class__._finder = MusicFinder("/home/paulocanedo/Music")
+        if self.__class__._music_player is None:
+            self.__class__._music_player = MusicPlayer(self.__class__._finder)
         BaseHTTPRequestHandler.__init__(self, request, client_address, server)
 
     def send_text_response(self, type, output):
@@ -49,37 +54,38 @@ class RemotePlayHttpHandler(BaseHTTPRequestHandler):
             if self.path.startswith("/play/"):
                 music_id = self.path.replace('/play/', '', 1)
 
-                self._music_player.play(music_id)
+                self.__class__._music_player.play(music_id)
 
             if self.path.startswith("/set_volume/"):
                 volume = self.path.replace('/set_volume/', '', 1)
-                pygame.mixer.music.set_volume(float(volume) / 100.0)
+                self.__class__._music_player.set_volume(float(volume) / 100.0)
+                # pygame.mixer.music.set_volume(float(volume) / 100.0)
 
             # if self.path == '/play':
             #     pygame.mixer.music.play()
 
             if self.path == '/stop':
-                self._music_player.stop()
+                self.__class__._music_player.stop()
 
             if self.path == '/pause':
-                self._music_player.pause()
+                self.__class__._music_player.pause()
 
             if self.path == '/resume':
-                self._music_player.resume()
+                self.__class__._music_player.resume()
 
             if self.path == '/current':
                 response_type = APPLICATION_JSON
 
                 response = {
-                    # 'volume': pygame.mixer.music.get_volume(),
-                    # 'position': pygame.mixer.music.get_pos(),
-                    'title': self._music_player.current_title()
+                    'volume': self.__class__._music_player.get_volume(),
+                    'position': self.__class__._music_player.get_position(),
+                    'title': self.__class__._music_player.current_title()
                 }
                 output.write(json.dumps(response))
 
             if self.path == '/list':
                 response_type = APPLICATION_JSON
-                musics = self._finder.list_musics()
+                musics = self.__class__._finder.list_musics()
                 output.write(json.dumps(musics))
 
             self.send_text_response(response_type, output)

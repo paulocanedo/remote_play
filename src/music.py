@@ -51,16 +51,10 @@ class MusicFinder:
 
 
 class MusicPlayer:
-    _instance = None
 
     def __init__(self, finder):
         self._finder = finder
         self._current_music = None
-
-    def __new__(cls, *args, **kwargs):
-        if not cls._instance:
-            cls._instance = super(MusicPlayer, cls).__new__(cls, *args, **kwargs)
-        return cls._instance
 
     def play_next(self):
         return True
@@ -98,15 +92,3 @@ class MusicPlayer:
 
     def set_position(self, position):
         pygame.mixer.music.set_pos(position)
-
-pygame.init()
-pygame.mixer.init()
-finder = MusicFinder("/home/paulocanedo/Downloads/Music")
-finder.list_musics()
-player = MusicPlayer(finder)
-
-print player.current_title()
-player.play(5)
-print player.current_title()
-player = MusicPlayer(finder)
-print player.current_title()
