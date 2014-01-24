@@ -15,7 +15,7 @@ class RemotePlayHttpHandler(BaseHTTPRequestHandler):
 
     def __init__(self, request, client_address, server):
         if self.__class__._finder is None:
-            self.__class__._finder = MusicFinder("/home/paulocanedo/Music")
+            self.__class__._finder = MusicFinder("/home/paulocanedo/Downloads/Music")
         if self.__class__._music_player is None:
             self.__class__._music_player = MusicPlayer(self.__class__._finder)
         BaseHTTPRequestHandler.__init__(self, request, client_address, server)
@@ -59,10 +59,6 @@ class RemotePlayHttpHandler(BaseHTTPRequestHandler):
             if self.path.startswith("/set_volume/"):
                 volume = self.path.replace('/set_volume/', '', 1)
                 self.__class__._music_player.set_volume(float(volume) / 100.0)
-                # pygame.mixer.music.set_volume(float(volume) / 100.0)
-
-            # if self.path == '/play':
-            #     pygame.mixer.music.play()
 
             if self.path == '/stop':
                 self.__class__._music_player.stop()

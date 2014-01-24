@@ -1,6 +1,6 @@
 import os
 import pygame
-import kaa.metadata
+from mutagen.easyid3 import EasyID3
 from database import Database
 
 
@@ -30,15 +30,24 @@ class MusicFinder:
         files = MusicFinder.list_files_from_filesystem(base_dir)
         musics_mdata = []
         for f in files:
-            mdata = kaa.metadata.parse(f)
+            mdata = EasyID3(f)
             if mdata:
-                values = (str(f), mdata.get('trackno'), mdata.get('title'), mdata.get('album'), mdata.get('artist'))
+                values = (str(f),
+                          MusicFinder.__get_value(mdata, 'tracknumber'),
+                          MusicFinder.__get_value(mdata, 'title'),
+                          MusicFinder.__get_value(mdata, 'album'),
+                          MusicFinder.__get_value(mdata, 'artist'))
                 musics_mdata.append(values)
 
         return musics_mdata
+    # ['date', 'performer', 'tracknumber', 'album', 'genre', 'artist', 'title', 'bpm', 'albumsort']
 
     @staticmethod
-    def list_files_from_filesystem(base_dir, extensions={".mp3", ".flac"}):
+    def __get_value(mdata, key):
+        return mdata.get(key)[0] if key in mdata.keys() else None
+
+    @staticmethod
+    def list_files_from_filesystem(base_dir, extensions={".mp3"}):
         file_list = []
 
         for root, subFolders, files in os.walk(base_dir):
