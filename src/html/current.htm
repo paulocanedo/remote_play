@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>title</title>
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+  </head>
+  <body>
+
+    <div id="wrap">
+
+      <div class="container">
+        <div class="page-header">
+          <h1>Details of current music</h1>
+          <h2><a id="lyrics_link" target="mldb_tab">See lyrics</a></h2>
+
+<table class="table">
+    <tr>
+        <td>Title</td>
+        <td id="cell_title">#</td>
+    </tr>
+    <tr>
+        <td>Artist</td>
+        <td id="cell_artist">#</td>
+    </tr>
+    <tr>
+        <td>Album</td>
+        <td id="cell_album">#</td>
+    </tr>
+</table>
+
+
+        </div>
+        <div id="list_music"></div>
+      </div>
+    </div>
+
+    <div id="footer">
+      <div class="container">
+        <p class="text-muted">Place sticky footer content here.</p>
+      </div>
+    </div>
+
+  </body>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script>
+    var url_api = "http://192.168.0.14:8000/";
+
+    $(document).ready(function() {
+        setMetadata();
+    });
+
+    function setMetadata() {
+        var api = url_api + "current";
+        $.getJSON(api, function(data) {
+            $("#cell_title").text(data.title);
+            $("#cell_artist").text(data.artist);
+            $("#cell_album").text(data.album);
+
+            document.getElementById("lyrics_link").href = "http://www.mldb.org/search?mq=" + data.artist + " " + data.title;
+        });
+    }
+</script>
+</html>

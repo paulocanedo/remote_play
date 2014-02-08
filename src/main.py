@@ -13,3 +13,5 @@ pygame.mixer.init()
 
 print "serving at port", PORT
 httpd.serve_forever()
+
+print "after server"

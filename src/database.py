@@ -25,27 +25,23 @@ class Database:
         cursor = connection.cursor()
         cursor.execute("""
                         CREATE TABLE IF NOT EXISTS tracks
-                            (id INTEGER PRIMARY KEY AUTOINCREMENT, file_path TEXT, trackno INTEGER, title TEXT,
-                             album_title TEXT, album_artist TEXT)
+                            (id INTEGER PRIMARY KEY AUTOINCREMENT, file_path TEXT, trackno TEXT, track_length FLOAT,
+                            title TEXT, album_title TEXT, album_artist TEXT)
         """)
         connection.commit()
 
     def insert(self, values):
         connection = self.get_connection()
         cursor = connection.cursor()
-        cursor.executemany("INSERT INTO tracks (file_path, trackno, title, album_title, album_artist) "
-                           "VALUES (?, ?, ?, ?, ?)", values)
+        cursor.executemany("INSERT INTO tracks (file_path, trackno, track_length, title, album_title, album_artist) "
+                           "VALUES (?, ?, ?, ?, ?, ?)", values)
         connection.commit()
 
     def get_one(self, music_id):
-        """
-        get music metadata
-        @param music_id:
-        @return: indexes: 0-> file_path, 1-> trackno, 2-> title, 3-> album_title, 4-> album_artist
-        """
         connection = self.get_connection()
         cursor = connection.cursor()
-        cursor.execute("SELECT file_path, trackno, title, album_title, album_artist FROM tracks WHERE id = %s" % music_id)
+        cursor.execute("SELECT * "
+                       "FROM tracks WHERE id = %s" % music_id)
 
         return cursor.fetchone()
 

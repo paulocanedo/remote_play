@@ -54,11 +54,14 @@ class RemotePlayHttpHandler(BaseHTTPRequestHandler):
             if self.path.startswith("/play/"):
                 music_id = self.path.replace('/play/', '', 1)
 
-                self.__class__._music_player.play(music_id)
+                self.__class__._music_player.play_from_id(music_id)
 
             if self.path.startswith("/set_volume/"):
                 volume = self.path.replace('/set_volume/', '', 1)
                 self.__class__._music_player.set_volume(float(volume) / 100.0)
+
+            if self.path == '/play':
+                self.__class__._music_player.play()
 
             if self.path == '/stop':
                 self.__class__._music_player.stop()
@@ -69,19 +72,29 @@ class RemotePlayHttpHandler(BaseHTTPRequestHandler):
             if self.path == '/resume':
                 self.__class__._music_player.resume()
 
+            if self.path == '/play_next':
+                self.__class__._music_player.play_next()
+
+            if self.path == '/play_prev':
+                self.__class__._music_player.play_prev()
+
             if self.path == '/current':
                 response_type = APPLICATION_JSON
 
                 response = {
                     'volume': self.__class__._music_player.get_volume(),
                     'position': self.__class__._music_player.get_position(),
-                    'title': self.__class__._music_player.current_title()
+                    'title': self.__class__._music_player.current_title(),
+                    'artist': self.__class__._music_player.current_artist(),
+                    'album': self.__class__._music_player.current_album(),
+                    'length': self.__class__._music_player.current_length()
                 }
                 output.write(json.dumps(response))
 
             if self.path == '/list':
                 response_type = APPLICATION_JSON
                 musics = self.__class__._finder.list_musics()
+                self.__class__._music_player.set_list(musics)
                 output.write(json.dumps(musics))
 
             self.send_text_response(response_type, output)
