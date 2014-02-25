@@ -41,9 +41,8 @@
 
 <!--<script src="http://localhost/jquery-2.0.3.min.js"></script>-->
 <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js"></script>
 <script>
-    var url_api = "http://192.168.0.14:8000/";
-
     $(document).ready(function() {
         var api = url_api + "list";
         $.getJSON(api, function(data) {
@@ -72,33 +71,13 @@
         setMetadata();
     });
 
-    var lastCommand;
-    var lastObject;
-    function sendCommand(command, object) {
-        var api = url_api + command;
-        lastCommand = command;
-
-        $.ajax({
-            statusCode: { 200: function() {
-                    setMetadata();
-                    if (lastCommand == "pause") {
-                        $("#ctrl_pause").prop("disabled", true);
-                    } else if (lastCommand == "resume") {
-                        $("#ctrl_pause").prop("disabled", false);
-                    }
-                }
-            },
-            dataType: "json",
-            url: api,
-        });
-    }
-
     function setMetadata() {
-        var api = url_api + "current";
-        $.getJSON(api, function(data) {
-            $("#control_volume").val(data.volume * 100.0);
-            $("#ctrl_current_music").text(data.title);
-        });
-    }
+    var api = url_api + "current";
+    $.getJSON(api, function(data) {
+        $("#control_volume").val(data.volume * 100.0);
+        $("#ctrl_current_music").text(data.title);
+        $("#control_pos").prop('max', data.length);
+    });
+}
 </script>
 </html>

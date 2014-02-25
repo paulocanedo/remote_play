@@ -7,6 +7,7 @@ from src.music import MusicFinder, MusicPlayer
 
 TEXT_HTML = 'text/html'
 APPLICATION_JSON = 'application/json'
+APPLICATION_JAVA_SCRIPT = 'application/javascript'
 
 
 class RemotePlayHttpHandler(BaseHTTPRequestHandler):
@@ -48,6 +49,12 @@ class RemotePlayHttpHandler(BaseHTTPRequestHandler):
             if self.path.startswith("/html/"):
                 html_file = self.path.replace('/html/', '', 1)
                 with open('./html/%s.htm' % html_file) as handle:
+                    content = handle.read()
+                    output.write(content)
+
+            if self.path == "/js":
+                response_type = APPLICATION_JAVA_SCRIPT
+                with open('./js/rp.js') as handle:
                     content = handle.read()
                     output.write(content)
 

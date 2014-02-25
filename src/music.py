@@ -194,9 +194,3 @@ class MusicObserver(Thread):
                 if event.type == self.__class__.TRACK_END:
                     self._player.play_next()
             time.sleep(0.1)
-
-# pygame.init()
-# pygame.mixer.init()
-# finder = MusicFinder("/home/paulocanedo/Downloads/Music")
-# player = MusicPlayer(finder)
-# print finder.list_musics()
