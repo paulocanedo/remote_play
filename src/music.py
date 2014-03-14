@@ -1,11 +1,16 @@
 import os
-import pygame
 import time
+import pygst
+pygst.require("0.10")
+import gst
+
+
 from mutagen.easyid3 import EasyID3
 from mutagen.mp4 import MP4
 from mutagen.mp3 import MP3
 from threading import Thread
 from database import Database
+from gst.extend.discoverer import Discoverer
 
 
 class MusicFinder:
@@ -59,6 +64,7 @@ class MusicFinder:
         if mdata:
             values = (str(file_path),
                       str(MusicFinder.__get_value(mdata, "trkn")),
+                      mdata.info.length * 1000,
                       MusicFinder.__get_value(mdata, "\xa9nam"),
                       MusicFinder.__get_value(mdata, "\xa9alb"),
                       MusicFinder.__get_value(mdata, "\xa9ART"))
@@ -83,7 +89,7 @@ class MusicFinder:
         return mdata.get(key)[0] if key in mdata.keys() else None
 
     @staticmethod
-    def list_files_from_filesystem(base_dir, extensions={".mp3"}):
+    def list_files_from_filesystem(base_dir, extensions={".mp3", ".m4a"}):
         file_list = []
 
         for root, subFolders, files in os.walk(base_dir):
@@ -96,6 +102,8 @@ class MusicFinder:
 
 
 class MusicPlayer:
+    _gst_player = None
+
     def __init__(self, finder):
         self._finder = finder
         self._current_music = None
@@ -107,7 +115,15 @@ class MusicPlayer:
         self._shuffle_mode = 0
         self._repeat_mode = 0
 
-        self._music_observer = MusicObserver(self)
+
+        if self.__class__._gst_player is None:
+            self.__class__._gst_player = GstPlayer()
+            def on_eos():
+                print "terminou a musica"
+
+            self.__class__._gst_player.on_eos = lambda *x: on_eos()
+
+        self._music_observer = MusicObserver(self.__class__._gst_player)
         self._music_observer.start()
 
     def play_next(self):
@@ -142,11 +158,12 @@ class MusicPlayer:
             else:
                 self._current_music = self._current_playlist[self._current_index]
 
+        self.stop()
         self.load(self._current_music['file_path'])
-        pygame.mixer.music.play()
+        self.__class__._gst_player.play()
 
     def load(self, file_path):
-        pygame.mixer.music.load(file_path)
+        self.__class__._gst_player.set_location('file://%s' % file_path)
 
     def play_from_id(self, music_id):
         self._current_music = self._finder.get_metadata(music_id)
@@ -156,41 +173,123 @@ class MusicPlayer:
         pass
 
     def pause(self):
-        pygame.mixer.music.pause()
+        self.__class__._gst_player.pause()
 
     def resume(self):
-        pygame.mixer.music.unpause()
+        self.__class__._gst_player.play()
 
     def stop(self):
-        pygame.mixer.music.stop()
+        self.__class__._gst_player.stop()
 
     def get_volume(self):
-        return pygame.mixer.music.get_volume()
+        return self.__class__._gst_player.get_volume()
 
     def set_volume(self, volume):
-        pygame.mixer.music.set_volume(volume)
+        self.__class__._gst_player.set_volume(volume)
 
     def get_position(self):
-        return pygame.mixer.music.get_pos()
+        pass
 
     def set_position(self, position):
-        pygame.mixer.music.set_pos(position)
+        pass
 
     def set_list(self, list):
         self._current_playlist = list
 
 
 class MusicObserver(Thread):
-    TRACK_END = pygame.constants.USEREVENT + 1
-
     def __init__(self, player):
         Thread.__init__(self)
         self._player = player
-        pygame.mixer.music.set_endevent(self.__class__.TRACK_END)
 
     def run(self):
         while True:
-            for event in pygame.event.get():
-                if event.type == self.__class__.TRACK_END:
-                    self._player.play_next()
-            time.sleep(0.1)
+            position, duration = self._player.query_position()
+            if position >= duration:
+                print "acabou"
+            time.sleep(0.3)
+        pass
+
+
+class GstPlayer:
+    def __init__(self):
+        self.playing = False
+        self.player = gst.element_factory_make("playbin", "player")
+        self.on_eos = False
+
+        bus = self.player.get_bus()
+        bus.add_signal_watch()
+        bus.connect('message', self.on_message)
+
+    def on_message(self, bus, message):
+        print "message %s" % message
+        msgType = message.type
+        if msgType == gst.MESSAGE_ERROR:
+            self.player.set_state(gst.STATE_NULL)
+            self.playing = False
+            print "\n Unable to play audio. Error: ", \
+            message.parse_error()
+        elif msgType == gst.MESSAGE_EOS:
+            self.player.set_state(gst.STATE_NULL)
+            self.playing = False
+
+    def set_location(self, location):
+        self.player.set_property('uri', location)
+
+    def query_position(self):
+        "Returns a (position, duration) tuple"
+        try:
+            position, format = self.player.query_position(gst.FORMAT_TIME)
+        except:
+            position = gst.CLOCK_TIME_NONE
+
+        try:
+            duration, format = self.player.query_duration(gst.FORMAT_TIME)
+        except:
+            duration = gst.CLOCK_TIME_NONE
+
+        return (position, duration)
+
+    def seek(self, location):
+        """
+        @param location: time to seek to, in nanoseconds
+        """
+        gst.debug("seeking to %r" % location)
+        event = gst.event_new_seek(1.0, gst.FORMAT_TIME,
+            gst.SEEK_FLAG_FLUSH | gst.SEEK_FLAG_ACCURATE,
+            gst.SEEK_TYPE_SET, location,
+            gst.SEEK_TYPE_NONE, 0)
+
+        res = self.player.send_event(event)
+        if res:
+            gst.info("setting new stream time to 0")
+            self.player.set_new_stream_time(0L)
+        else:
+            gst.error("seek to %r failed" % location)
+
+    def pause(self):
+        gst.info("pausing player")
+        self.player.set_state(gst.STATE_PAUSED)
+        self.playing = False
+
+    def play(self):
+        gst.info("playing player")
+        self.player.set_state(gst.STATE_PLAYING)
+        self.playing = True
+
+    def stop(self):
+        self.player.set_state(gst.STATE_NULL)
+        gst.info("stopped player")
+
+    def get_state(self, timeout=1):
+        return self.player.get_state(timeout=timeout)
+
+    def is_playing(self):
+        return self.playing
+
+    def get_volume(self):
+        return self.player.props.volume
+
+
+    def set_volume(self, volume):
+        self.player.props.volume = volume

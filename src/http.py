@@ -16,7 +16,7 @@ class RemotePlayHttpHandler(BaseHTTPRequestHandler):
 
     def __init__(self, request, client_address, server):
         if self.__class__._finder is None:
-            self.__class__._finder = MusicFinder("/home/paulocanedo/Downloads/Music")
+            self.__class__._finder = MusicFinder("/home/paulocanedo/Downloads/Music/test")
         if self.__class__._music_player is None:
             self.__class__._music_player = MusicPlayer(self.__class__._finder)
         BaseHTTPRequestHandler.__init__(self, request, client_address, server)
