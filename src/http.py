@@ -2,6 +2,7 @@ from BaseHTTPServer import BaseHTTPRequestHandler
 import cStringIO
 import json
 import traceback
+import config
 
 from src.music import MusicFinder, MusicPlayer
 
@@ -16,7 +17,7 @@ class RemotePlayHttpHandler(BaseHTTPRequestHandler):
 
     def __init__(self, request, client_address, server):
         if self.__class__._finder is None:
-            self.__class__._finder = MusicFinder("/home/paulocanedo/Downloads/Music/test")
+            self.__class__._finder = MusicFinder(config.MUSIC_DIRECTORY)
         if self.__class__._music_player is None:
             self.__class__._music_player = MusicPlayer(self.__class__._finder)
         BaseHTTPRequestHandler.__init__(self, request, client_address, server)
@@ -48,7 +49,7 @@ class RemotePlayHttpHandler(BaseHTTPRequestHandler):
 
             if self.path.startswith("/html/"):
                 html_file = self.path.replace('/html/', '', 1)
-                with open('./html/%s.htm' % html_file) as handle:
+                with open('html/%s.htm' % html_file) as handle:
                     content = handle.read()
                     output.write(content)
 

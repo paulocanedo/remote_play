@@ -4,14 +4,9 @@ import os
 
 
 class Database:
-    def __init__(self, file_path='../build/database.db'):
+    def __init__(self, file_path='build/database.db'):
         self.file_path = file_path
         self.connection = None
-
-    def truncate_db(self):
-        if os.path.isfile(self.file_path):
-            os.remove(self.file_path)
-        self.create_tables()
 
     def get_connection(self):
         if not self.connection:

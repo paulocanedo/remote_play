@@ -3,7 +3,8 @@ import time
 import pygst
 pygst.require("0.10")
 import gst
-
+import gobject
+import thread
 
 from mutagen.easyid3 import EasyID3
 from mutagen.mp4 import MP4
@@ -17,15 +18,13 @@ class MusicFinder:
     def __init__(self, base_dir):
         self._base_dir = base_dir
         self._database = Database()
-        self._rebuild = True
 
     def list_musics(self):
-        if self._rebuild:
+        if not os.path.isfile(self._database.file_path):
             base_dir = self._base_dir
             values = MusicFinder.list_musics_from_filesystem(base_dir)
-            self._database.truncate_db()
+            self._database.create_tables()
             self._database.insert(values)
-            self._rebuild = False
         return self.list_musics_from_database()
 
     def list_musics_from_database(self):
@@ -123,8 +122,8 @@ class MusicPlayer:
 
             self.__class__._gst_player.on_eos = lambda *x: on_eos()
 
-        self._music_observer = MusicObserver(self.__class__._gst_player)
-        self._music_observer.start()
+        # self._music_observer = MusicObserver(self)
+        # self._music_observer.start()
 
     def play_next(self):
         if self._current_index < len(self._current_playlist) - 1:
@@ -188,13 +187,16 @@ class MusicPlayer:
         self.__class__._gst_player.set_volume(volume)
 
     def get_position(self):
-        pass
+        return self.__class__._gst_player.query_position()
 
     def set_position(self, position):
         pass
 
     def set_list(self, list):
         self._current_playlist = list
+
+    def query_position(self):
+        return self.__class__._gst_player.query_position()
 
 
 class MusicObserver(Thread):
@@ -206,23 +208,38 @@ class MusicObserver(Thread):
         while True:
             position, duration = self._player.query_position()
             if position >= duration:
-                print "acabou"
+                # make GstPlayer to receive a list music or add an event to end music in observer and inject the method
+                # inside MusicPlayer
+                self._player.play_next()
+                # self._player.__class__._gst_player.play_next()
             time.sleep(0.3)
         pass
 
 
-class GstPlayer:
+class GstPlayer(object):
     def __init__(self):
         self.playing = False
         self.player = gst.element_factory_make("playbin", "player")
-        self.on_eos = False
 
+        #-----------------------------------------------------------
+        """Start a new thread for the player.
+        Call this function before trying to play any music with
+        play_file() or play().
+        """
+        # If we don't use the MainLoop, messages are never sent.
+        gobject.threads_init()
+        def start():
+            loop = gobject.MainLoop()
+            loop.run()
+        thread.start_new_thread(start, ())
+        #-----------------------------------------------------------
+
+        self.on_eos = False
         bus = self.player.get_bus()
         bus.add_signal_watch()
         bus.connect('message', self.on_message)
 
     def on_message(self, bus, message):
-        print "message %s" % message
         msgType = message.type
         if msgType == gst.MESSAGE_ERROR:
             self.player.set_state(gst.STATE_NULL)
@@ -231,7 +248,9 @@ class GstPlayer:
             message.parse_error()
         elif msgType == gst.MESSAGE_EOS:
             self.player.set_state(gst.STATE_NULL)
-            self.playing = False
+            # self.playing = False
+            # self._player.play_next()
+            print "Terminou a musica, aleluia consegui"
 
     def set_location(self, location):
         self.player.set_property('uri', location)
